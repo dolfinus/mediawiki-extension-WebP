@@ -57,6 +57,12 @@ class WebPMediaHandler extends WebPHandler {
 		return $this->transformImageMagick( $image, $params );
 	}
 
+	/**
+	 * @param string $ext
+	 * @param string $mime
+	 * @param null $params
+	 * @return string[]
+	 */
 	public function getThumbType( $ext, $mime, $params = null ) {
 		return [ 'webp', 'image/webp' ];
 	}

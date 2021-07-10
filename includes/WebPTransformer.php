@@ -131,6 +131,8 @@ class WebPTransformer {
 	 * @throws ImagickException
 	 */
 	public function transform(): Status {
+		wfDebugLog( 'WebP', "[WebPTransformer::transform] Running transform for file {$this->file->getName()}; Mime Type {$this->file->getMimeType()}" );
+
 		$tempFile = $this->getTempFilePath();
 
 		$out = sprintf(
@@ -139,6 +141,8 @@ class WebPTransformer {
 			self::changeExtensionWebp( $this->file->getName() )
 		);
 
+		wfDebugLog( 'WebP', "[WebPTransformer::transform] Out path is {$out}" );
+
 		if ( $this->checkFileExists( $out, 'webp-public' ) && !$this->shouldOverwrite() ) {
 			return Status::newGood();
 		}
@@ -146,6 +150,7 @@ class WebPTransformer {
 		$result = $this->transformImage( $tempFile );
 
 		if ( !$result ) {
+			wfDebugLog( 'WebP', "[WebPTransformer::transform] Failed" );
 			return Status::newFatal( 'Could not convert Image' );
 		}
 
@@ -155,6 +160,8 @@ class WebPTransformer {
 			$out,
 			( $this->shouldOverwrite() ? FileRepo::OVERWRITE : 0 ) & FileRepo::SKIP_LOCKING
 		);
+
+		wfDebugLog( 'WebP', "[WebPTransformer::transform] Store status is " . $status->isOK() ? 'OK' : $status->getMessage()->plain() );
 
 		$this->logStatus( $status );
 
@@ -181,7 +188,7 @@ class WebPTransformer {
 	 * @return bool
 	 */
 	public static function canTransform( File $file ): bool {
-		return in_array( $file->getMimeType(), self::$supportedMimes );
+		return in_array( strtolower( $file->getMimeType() ), self::$supportedMimes );
 	}
 
 	/**

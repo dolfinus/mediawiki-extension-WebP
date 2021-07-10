@@ -44,6 +44,8 @@ class LocalWebPFile extends LocalFile {
 			return parent::getHandler();
 		}
 
+		wfDebugLog( 'WebP', "[LocalWebPFile::getHandler] Returning WebP handler for file {$this->getName()}" );
+
 		if ( $this->handler !== null && $this->handler instanceof WebPMediaHandler ) {
 			return $this->handler;
 		}
@@ -75,20 +77,31 @@ class LocalWebPFile extends LocalFile {
 	 * @return bool|MediaTransformError|MediaTransformOutput|ThumbnailImage
 	 */
 	public function transform( $params, $flags = 0 ) {
+		wfDebugLog( 'WebP', "[LocalWebPFile::transform] Running transform for file {$this->getName()}" );
+
 		$transformed = parent::transform( $params, $flags );
 
+		if ( $transformed === false ) {
+			wfDebugLog( 'WebP', "[LocalWebPFile::transform] Parent returned false" );
+		}
+
 		if ( $transformed === false || !WebPTransformer::canTransform( $this ) || $transformed->getWidth() >= $this->getWidth() ) {
+			wfDebugLog( 'WebP', "[LocalWebPFile::transform] Returning parent transform" );
 			return $transformed;
 		}
 
 		$thumbName = $this->thumbName( $params );
+
+		wfDebugLog( 'WebP', "[LocalWebPFile::transform] Thumbname is {$thumbName}" );
 
 		$url = $this->getThumbUrl( $thumbName );
 		if ( MediaWikiServices::getInstance()->getMainConfig()->get( 'ThumbnailScriptPath' ) !== false ) {
 			$url = $transformed->getUrl();
 		}
 
-		return new ThumbnailImage( $this, $url, $this->getThumbPath( $this->thumbName( $params ) ), [
+		wfDebugLog( 'WebP', "[LocalWebPFile::transform] Thumbnail url is {$url}, path is {$this->getThumbPath( $thumbName )}" );
+
+		return new ThumbnailImage( $this, $url, $this->getThumbPath( $thumbName ), [
 			'width' => $transformed->getWidth(),
 			'height' => $transformed->getHeight(),
 		] );
@@ -106,6 +119,8 @@ class LocalWebPFile extends LocalFile {
 		if ( !WebPTransformer::canTransform( $this ) ) {
 			return parent::getThumbDisposition( $thumbName, $dispositionType );
 		}
+
+		wfDebugLog( 'WebP', "[LocalWebPFile::getThumbDisposition] Running disposition for {$thumbName}" );
 
 		$parts = [
 			'attachment',
@@ -129,6 +144,7 @@ class LocalWebPFile extends LocalFile {
 		$zone = 'webp-public';
 
 		if ( $this->repo->fileExists( $this->repo->getZonePath( $zone ) . '/' . $this->getRel() ) ) {
+			wfDebugLog( 'WebP', "[LocalWebPFile::getPath] File exists on 'webp-public' under " . $this->repo->getZonePath( $zone ) . '/' . $this->getRel() );
 			return $this->repo->getZonePath( $zone ) . '/' . $this->getRel();
 		}
 
@@ -136,6 +152,8 @@ class LocalWebPFile extends LocalFile {
 			$this->assertRepoDefined();
 			$this->path = $this->repo->getZonePath( 'public' ) . '/' . $this->getRel();
 		}
+
+		wfDebugLog( 'WebP', "[LocalWebPFile::getPath] Returning path from public: " . $this->path );
 
 		return $this->path;
 	}
@@ -154,8 +172,11 @@ class LocalWebPFile extends LocalFile {
 		$ext = $this->getExtension();
 		$path = $this->repo->getZoneUrl( 'webp-thumb', $ext ) . '/' . $this->getUrlRel();
 
+		wfDebugLog( 'WebP', "[LocalWebPFile::getThumbUrl] Path is {$path}" );
+
 		if ( $suffix !== false ) {
 			$path .= '/' . rawurlencode( $suffix );
+			wfDebugLog( 'WebP', "[LocalWebPFile::getThumbUrl] Added suffix to path: {$path}" );
 		}
 
 		return $path;
@@ -173,8 +194,11 @@ class LocalWebPFile extends LocalFile {
 		}
 
 		if ( $suffix !== false ) {
+			wfDebugLog( 'WebP', "[LocalWebPFile::getThumbPath] Suffix is {$suffix}" );
 			$suffix = WebPTransformer::changeExtensionWebp( $suffix );
 		}
+
+		wfDebugLog( 'WebP', "[LocalWebPFile::getThumbPath] Returned Path is " . $this->repo->getZonePath( 'webp-thumb' ) . '/' . $this->getThumbRel( $suffix ) );
 
 		return $this->repo->getZonePath( 'webp-thumb' ) . '/' . $this->getThumbRel( $suffix );
 	}

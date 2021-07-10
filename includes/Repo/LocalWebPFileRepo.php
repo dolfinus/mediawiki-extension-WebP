@@ -22,6 +22,7 @@ declare( strict_types=1 );
 
 namespace MediaWiki\Extension\WebP\Repo;
 
+use FSFile;
 use LocalRepo;
 use MediaWiki\Extension\WebP\WebPTransformer;
 
@@ -41,14 +42,17 @@ class LocalWebPFileRepo extends LocalRepo {
 	 * @return string|null Returns null if the zone is not defined
 	 */
 	public function getZonePath( $zone ) {
-		$isWebP = false;
+		wfDebugLog( 'WebP', "[LocalWebPFileRepo::getZonePath] Returning path for zone {$zone}" );
 
-		if ( strpos( $zone, 'webp-' ) !== false ) {
-			$isWebP = true;
-			$zone = str_replace( 'webp-', '', $zone );
+		if ( strpos( $zone, 'webp-' ) === false ) {
+			return parent::getZonePath( $zone );
 		}
 
+		$zone = str_replace( 'webp-', '', $zone );
+
 		[ $container, $base ] = $this->getZoneLocation( $zone );
+
+		wfDebugLog( 'WebP', "[LocalWebPFileRepo::getZonePath] Container is {$container}; Base is {$base}" );
 
 		if ( $container === null || $base === null ) {
 			return null;
@@ -56,13 +60,15 @@ class LocalWebPFileRepo extends LocalRepo {
 
 		$backendName = $this->backend->getName();
 
+		wfDebugLog( 'WebP', "[LocalWebPFileRepo::getZonePath] Backend name is {$backendName}" );
+
 		if ( $base !== '' ) { // may not be set
 			$base = "/{$base}";
 		}
 
-		if ( $isWebP ) {
-		   $container = sprintf( '%s/webp', $container );
-		}
+	   $container = sprintf( '%s/webp', $container );
+
+		wfDebugLog( 'WebP', "[LocalWebPFileRepo::getZonePath] Final Zone is " . "mwstore://$backendName/{$container}{$base}" );
 
 		return "mwstore://$backendName/{$container}{$base}";
 	}
@@ -73,6 +79,7 @@ class LocalWebPFileRepo extends LocalRepo {
 	 * @inheritDoc
 	 */
 	public function getZoneUrl( $zone, $ext = null ) {
+		wfDebugLog( 'WebP', "[LocalWebPFileRepo::getZoneUrl] Zone is {$zone}; Ext is {$ext}" );
 		return parent::getZoneUrl( str_replace( 'webp-', '', $zone ), $ext );
 	}
 
@@ -81,23 +88,40 @@ class LocalWebPFileRepo extends LocalRepo {
 	 * @return bool
 	 */
 	public function fileExists( $file ) {
+		wfDebugLog( 'WebP', "[LocalWebPFileRepo::fileExists] Checking existence for {$file}" );
+
 		$base = str_replace( 'webp/', '', $file );
 
 		if ( strpos( $file, 'thumb' ) === false ) {
 			$file = WebPTransformer::changeExtensionWebp( $file );
 		}
 
+		$baseExists = parent::fileExists( $base );
+		$webpExists = parent::fileExists( $file );
+
+		wfDebugLog( 'WebP', "[LocalWebPFileRepo::fileExists] Base: {$base}; WebP {$file}" );
+		wfDebugLog( 'WebP', "[LocalWebPFileRepo::fileExists] Base exists: {$baseExists}; WebP Exists {$webpExists}" );
+
 		return ( parent::fileExists( $base ) || parent::fileExists( $file ) );
 	}
 
+	/**
+	 * @param string $virtualUrl
+	 * @return FSFile|null
+	 */
 	public function getLocalReference( $virtualUrl ) {
+		wfDebugLog( 'WebP', "[LocalWebPFileRepo::getLocalReference] Virtual URL {$virtualUrl}" );
+
 		if ( strpos( $virtualUrl, '/webp' ) !== false ) {
+			wfDebugLog( 'WebP', "[LocalWebPFileRepo::getLocalReference] Virtual URL for WEBP " . WebPTransformer::changeExtensionWebp( $virtualUrl ) );
 			$referenceWebP = parent::getLocalReference( WebPTransformer::changeExtensionWebp( $virtualUrl ) );
 
 			if ( $referenceWebP !== null ) {
 				return $referenceWebP;
 			}
 		}
+
+		wfDebugLog( 'WebP', "[LocalWebPFileRepo::getLocalReference] Checking parent with URL " . str_replace( '/webp', '', $virtualUrl ) );
 
 		return parent::getLocalReference( str_replace( '/webp', '', $virtualUrl ) );
 	}

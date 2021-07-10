@@ -95,8 +95,18 @@ class ThumbnailHooks implements LocalFilePurgeThumbnailsHook, ThumbnailBeforePro
 		$request = RequestContext::getMain();
 
 		if ( !WebPTransformer::canTransform( $thumbnail->getFile() ) || $thumbnail->getFile() === false || $thumbnail->getUrl() === false ) {
+			if ( $thumbnail->getFile() === false ) {
+				wfDebugLog( 'WebP', "[ThumbnailHooks::onThumbnailBeforeProduceHTML] Skipping thumbnail hook file is false" );
+			} else {
+				wfDebugLog( 'WebP', "[ThumbnailHooks::onThumbnailBeforeProduceHTML] Skipping thumbnail hook for file {$thumbnail->getFile()->getName()}" );
+			}
 			return;
 		}
+
+		wfDebugLog( 'WebP', "[ThumbnailHooks::onThumbnailBeforeProduceHTML] Running Thumbnail Hook for file {$thumbnail->getFile()->getName()}", 'all', [
+			'file' => $thumbnail->getFile()->getName(),
+			'thumb_storage_path' => $thumbnail->getStoragePath(),
+		] );
 
 		if ( $request === null || $request->getRequest()->getHeader( 'ACCEPT' ) === false ) {
 			return;
@@ -120,6 +130,8 @@ class ThumbnailHooks implements LocalFilePurgeThumbnailsHook, ThumbnailBeforePro
 			$path = $thumbnail->getFile()->getPath();
 		}
 
+		wfDebugLog( 'WebP', "[ThumbnailHooks::onThumbnailBeforeProduceHTML] Thumbnail path is {$thumbnail->getFile()->getName()}" );
+
 		$webP = sprintf(
 			'%swebp',
 			substr( $thumbnail->getUrl(), 0, -( strlen( pathinfo( $thumbnail->getUrl(), PATHINFO_EXTENSION ) ) ) )
@@ -134,6 +146,8 @@ class ThumbnailHooks implements LocalFilePurgeThumbnailsHook, ThumbnailBeforePro
 		} else {
 			$webP = str_replace( 'images/', 'images/webp/', $webP );
 		}
+
+		wfDebugLog( 'WebP', "[ThumbnailHooks::onThumbnailBeforeProduceHTML] Thumbnail url is {$webP}" );
 
 		if ( $this->repoGroup->getLocalRepo()->fileExists( $pathLocal ) ) {
 			$attribs['src'] = $webP;
